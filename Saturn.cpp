@@ -17,10 +17,10 @@ public:
 	void LongLat(float);
 	void Orbit(float, float);
 	void Saturn(float, GLuint, GLUquadricObj*);
-	void Moon(float, float,float,float, GLuint, GLUquadricObj*);
+	void Moon(float, float, float, float, GLuint, GLUquadricObj*);
 	void SunLight(float);
 	void ring(GLuint);
-
+	void Sky(GLuint, GLUquadricObj*);
 };
 
 void Planet::ring(GLuint texture)
@@ -29,12 +29,11 @@ void Planet::ring(GLuint texture)
 	glPushMatrix();
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	//glTranslatef(1.0, 1.0, 0.0);
 	glRotatef(90.0, 1.0f, 0.0f, 0.0f);
 	glRotatef(45.0, 0.41f, 1.0f, 0.0f);
-	//glColor3f(1, 0, 1);
 	disk = gluNewQuadric();
 	gluQuadricDrawStyle(disk, GLU_FILL);
 	gluQuadricTexture(disk, GL_TRUE);
@@ -51,7 +50,6 @@ Planet::Planet()
 
 GLuint Planet::GetTexture(const char *file)
 {
-	//const char * filename = file;
 	GLuint texture_id;
 	int width, height;
 	unsigned char* image = SOIL_load_image(file, &width, &height, 0, SOIL_LOAD_RGB);
@@ -102,8 +100,6 @@ void Planet::Saturn(float saturnangle, GLuint texture, GLUquadricObj* Sphere)
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	//glRotatef(50.0, 1.0f, 0.0f, 0.0f);
 	glRotatef(90.0, 1.0f, 0.0f, 0.0f);
 	glRotatef(45.0, 0.0f, 1.0f, 0.0f);
 	glRotatef(saturnangle, 0.0f, 0.0f, 1.0f);
@@ -113,8 +109,24 @@ void Planet::Saturn(float saturnangle, GLuint texture, GLUquadricObj* Sphere)
 	gluSphere(Sphere, 3, 32, 32);
 	glPopMatrix();
 }
+//sky and stars
+void Planet::Sky(GLuint texture, GLUquadricObj* Sphere)
+{
+	glPushMatrix();
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glRotatef(90.0, 1.0f, 0.0f, 0.0f);
+	glRotatef(45.0, 0.0f, 1.0f, 0.0f);
+	gluQuadricDrawStyle(Sphere, GLU_FILL);
+	gluQuadricTexture(Sphere, GL_TRUE);
+	gluQuadricNormals(Sphere, GLU_SMOOTH);
+	gluSphere(Sphere, 43, 32, 32);
+	glPopMatrix();
+}
 //render Moon
-void Planet::Moon(float xAxis,float yAxis, float zAxis,float size, GLuint texture, GLUquadricObj* Sphere)
+void Planet::Moon(float xAxis, float yAxis, float zAxis, float size, GLuint texture, GLUquadricObj* Sphere)
 {
 	glPushMatrix();
 	glTranslatef(0, 1, 1);
@@ -148,13 +160,12 @@ void Planet::LongLat(float saturnangle)
 	glRotatef(90.0, 1.0f, 0.0f, 0.0f);
 	glRotatef(saturnangle, 0.0f, 0.0f, -1.0f);
 	glutWireSphere(3.03f, 36, 18);
-	//glClearColor(1,1,1,1);
 	glPopMatrix();
 
 	return;
 }
 #define TWOPI 2*3.142
-//texture[0]: Background texture, texture[1]:Earth texture and texture[2]:Moon texture
+#define sk 10
 static GLuint texture[5];
 //Quads for the Sphere		
 GLUquadricObj* Sphere;
@@ -162,13 +173,13 @@ GLUquadricObj* Sphere;
 moonAngle is the angle of Orbit at which the Moon has to revolve around earth
 lightAngle is the angle of Orbit at which the Sun(Light Source) revolves
 (here we assume the Earth is at centre)*/
-float saturnangle = 0, moonAngle1 = 0, moonAngle2 = 2, moonAngle3 = 3, moonAngle4 = 4, moonAngle5=3.5, lightAngle = 0;
+float saturnangle = 0, moonAngle1 = 0, moonAngle2 = 2, moonAngle3 = 3, moonAngle4 = 4, moonAngle5 = 3.5, lightAngle = 0;
 // angle of rotation for the camera direction
 float CameraAngle = 0.0;
 // actual vector representing the camera's direction
-float xPlane = 0.0f,yPlane=0.0f, zPlane = -1.0f;
+float xPlane = 0.0f, yPlane = 0.0f, zPlane = -1.0f;
 //position of the camera in the XZ plane
-float x = 0.0f,y=1.0f, z = 5.0f;
+float x = 0.0f, y = 1.0f, z = 5.0f;
 //Create an object of the class Planet
 Planet planet;
 
@@ -176,16 +187,16 @@ void SelectTexture(unsigned char key, int x, int y)
 {
 	switch (key)
 	{
-		case 'w':
-			CameraAngle += 0.02f;
-			yPlane = sin(CameraAngle);
-			zPlane = -cos(CameraAngle);
-			break;
-		case 's':
-			CameraAngle -= 0.02f;
-			yPlane = sin(CameraAngle);
-			zPlane = -cos(CameraAngle);
-			break;
+	case 'w':
+		CameraAngle += 0.02f;
+		yPlane = sin(CameraAngle);
+		zPlane = -cos(CameraAngle);
+		break;
+	case 's':
+		CameraAngle -= 0.02f;
+		yPlane = sin(CameraAngle);
+		zPlane = -cos(CameraAngle);
+		break;
 	}
 }
 //Changing the Camera View
@@ -227,13 +238,15 @@ void init()
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_COLOR_MATERIAL);
 	Sphere = gluNewQuadric();
-	//planet.BackGroundTexture();
 	//Saturn's Texture
 	texture[1] = planet.GetTexture("saturnmap.png");
 	glutKeyboardFunc(SelectTexture);
 	//Moon's Texture
 	texture[2] = planet.GetTexture("Moon.png");
+	//Rings Texture
 	texture[0] = planet.GetTexture("saturnringcolor.jpg");
+	//Sky's Texture
+	texture[3] = planet.GetTexture("SpaceBox.png");
 }
 
 //Resize the window whenever the window dimensions are explicitly changed
@@ -267,7 +280,8 @@ void display()
 	planet.ring(texture[0]);
 	//Longitudes and latitudes
 	//planet.LongLat(saturnangle);
-
+	//Display the sky with stars
+	planet.Sky(texture[3], Sphere);
 	//Calculate the orbit on which the Moon revolves around Earth
 	float xAxis1 = (float)sin(moonAngle1) * 7;
 	float zAxis1 = (float)cos(moonAngle1) * 5;
@@ -275,16 +289,17 @@ void display()
 	//display the orbit
 	planet.Orbit(xAxis1, zAxis1);
 
-	//Moon
-	planet.Moon(xAxis1,0, zAxis1,0.6f, texture[2], Sphere);
+	//Satellites
+	glNewList(sk, GL_COMPILE);
+	planet.Moon(xAxis1, 0, zAxis1, 0.6f, texture[2], Sphere);
 
 	float xAxis2 = (float)sin(moonAngle2) * 9;
 	float zAxis2 = (float)cos(moonAngle2) * 7;
-	planet.Moon(xAxis2,4, zAxis2,0.3f, texture[2], Sphere);
+	planet.Moon(xAxis2, 4, zAxis2, 0.3f, texture[2], Sphere);
 
 	float xAxis3 = (float)sin(moonAngle3) * 10;
 	float zAxis3 = (float)cos(moonAngle3) * 7;
-	planet.Moon(xAxis3,-4, zAxis3, 0.2f, texture[2], Sphere);
+	planet.Moon(xAxis3, -4, zAxis3, 0.2f, texture[2], Sphere);
 
 	float xAxis4 = (float)sin(moonAngle4) * 6;
 	float zAxis4 = (float)cos(moonAngle4) * 5;
@@ -293,6 +308,8 @@ void display()
 	float xAxis5 = (float)sin(moonAngle5) * 9;
 	float zAxis5 = (float)cos(moonAngle5) * 2;
 	planet.Moon(xAxis5, 1, zAxis5, 0.3596f, texture[2], Sphere);
+	glEndList();
+	glCallList(sk);
 	//Swap the Buffers and display
 	glutSwapBuffers();
 
@@ -300,7 +317,7 @@ void display()
 	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_LIGHTING);
 	glDisable(GL_LIGHT0);
-	glFlush();
+	
 }
 void wait(int value)
 {
@@ -362,7 +379,20 @@ void Pause(int button, int state, int x, int y)
 
 	}
 }
-
+void menu(int op)
+{
+	float Change = 0.1;
+	if (op == 1)
+	{
+		x += xPlane * Change;
+		y += yPlane * Change;
+		z += zPlane * Change;
+	}
+	if (op == 2)
+		glCallList(sk);
+	glFlush();
+	glutPostRedisplay();
+}
 int main(int argc, char** argv)
 {
 	//Initializers
@@ -372,6 +402,11 @@ int main(int argc, char** argv)
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow("Saturn and its satellites");
 	init();
+	glutCreateMenu(menu);
+	glutAddMenuEntry("Zoom", 1);
+	glutAddMenuEntry("Zoom out", 2);
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
+
 	//Set the CallBack functions
 	glutDisplayFunc(display);
 	glutReshapeFunc(Resize);
